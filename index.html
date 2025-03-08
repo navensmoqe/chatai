@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button id="closeSidebarBtn" class="close-sidebar-btn">✕</button>
+                <h2>الدردشات السابقة</h2>
+            </div>
+            <div class="chat-list" id="chatList">
+                <!-- الدردشات السابقة ستضاف هنا -->
+            </div>
+        </div>
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="header-controls">
+                    <div class="control-item">
+                        <button id="newChatBtn" title="دردشة جديدة">
+                            <span class="icon">📝</span>
+                        </button>
+                        <span class="control-label">دردشة جديدة</span>
+                    </div>
+                    <div class="control-item">
+                        <button id="toggleThemeBtn" title="تغيير المظهر">
+                            <span class="icon">🌓</span>
+                        </button>
+                        <span class="control-label">الوضع الليلي</span>
+                    </div>
+                </div>
+                <h1>المساعد الذكي</h1>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-container">
+                <div class="file-upload">
+                    <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx">
+                    <label for="fileInput">
+                        <span class="upload-icon">📎</span>
+                    </label>
+                </div>
+                <input type="text" id="userInput" placeholder="اكتب رسالتك هنا...">
+                <button id="sendBtn">إرسال</button>
+            </div>
+            <div class="file-preview" id="filePreview"></div>
+            <div class="disclaimer">
+                قد يعرض معلومات خاطئة، بما فيها تلك المتعلقة بالأشخاص
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
