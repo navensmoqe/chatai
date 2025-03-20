@@ -46,8 +46,26 @@ fileInput.addEventListener('change', (e) => {
 });
 
 function formatMessage(content) {
-    // تحويل النص المحاط بالنجوم والنقاط إلى تنسيق خاص
-    return content
+    // تحديد الأكواد البرمجية المحاطة بعلامات ```
+    const codeBlockRegex = /```(\w+)?\n([\s\S]+?)```/g;
+    let formattedContent = content;
+    
+    // استبدال كل كتلة كود بمربع كود منسق
+    formattedContent = formattedContent.replace(codeBlockRegex, (match, language = '', code) => {
+        return `<div class="code-block">
+            <div class="code-header">
+                <span class="code-language">${language || 'text'}</span>
+                <button class="code-copy-btn" onclick="copyCode(this)">
+                    <span class="icon">📋</span>
+                    نسخ
+                </button>
+            </div>
+            <pre class="code-content">${code.trim()}</pre>
+        </div>`;
+    });
+
+    // معالجة باقي التنسيقات
+    return formattedContent
         .replace(/\*\s?\*{2}([^*:]+):\*{0,2}/g, '<span class="highlighted-text">$1:</span>')
         .replace(/\*([^*]+)\*\*\*/g, '<span class="highlighted-text">$1</span>')
         // معالجة الروابط URL
@@ -55,6 +73,24 @@ function formatMessage(content) {
         // المحافظة على مسافات السطور الجديدة
         .replace(/\n/g, '<br>');
 }
+
+// إضافة وظيفة نسخ الكود
+window.copyCode = function(button) {
+    const codeBlock = button.closest('.code-block');
+    const codeContent = codeBlock.querySelector('.code-content').textContent;
+    
+    navigator.clipboard.writeText(codeContent).then(() => {
+        button.innerHTML = '<span class="icon">✓</span> تم النسخ';
+        button.classList.add('copied');
+        
+        setTimeout(() => {
+            button.innerHTML = '<span class="icon">📋</span> نسخ';
+            button.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('فشل نسخ النص:', err);
+    });
+};
 
 // Add message to chat
 function addMessage(content, isUser = false) {
