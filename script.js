@@ -16,6 +16,12 @@ fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert('حجم الملف كبير جداً. الحد الأقصى هو 5 ميجابايت.');
+        fileInput.value = '';
+        return;
+    }
+
     uploadedFile = file;
     filePreview.innerHTML = '';
 
@@ -24,23 +30,65 @@ fileInput.addEventListener('change', (e) => {
         reader.onload = (e) => {
             const img = document.createElement('img');
             img.src = e.target.result;
-            filePreview.appendChild(img);
+            requestAnimationFrame(() => {
+                filePreview.appendChild(img);
+            });
         };
         reader.readAsDataURL(file);
     } else {
         const docElement = document.createElement('div');
         docElement.className = 'document';
         docElement.textContent = file.name;
-        filePreview.appendChild(docElement);
+        requestAnimationFrame(() => {
+            filePreview.appendChild(docElement);
+        });
     }
 });
 
+function formatMessage(content) {
+    // تحويل النص المحاط بالنجوم والنقاط إلى تنسيق خاص
+    return content
+        .replace(/\*\s?\*{2}([^*:]+):\*{0,2}/g, '<span class="highlighted-text">$1:</span>')
+        .replace(/\*([^*]+)\*\*\*/g, '<span class="highlighted-text">$1</span>')
+        // معالجة الروابط URL
+        .replace(/(?:https?:\/\/)?[\w\-~]+(\.[\w\-~]+)+(\/[\w\-~]*)*(\?[^\s]*)?/g, '<a href="$&" target="_blank" rel="noopener noreferrer">$&</a>')
+        // المحافظة على مسافات السطور الجديدة
+        .replace(/\n/g, '<br>');
+}
+
 // Add message to chat
 function addMessage(content, isUser = false) {
+    const messageContainer = document.createElement('div');
+    messageContainer.className = `message-container ${isUser ? 'user-message-container' : 'ai-message-container'}`;
+    
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
-    messageDiv.textContent = content;
-    chatMessages.appendChild(messageDiv);
+    messageDiv.innerHTML = formatMessage(content);
+    messageDiv.dir = 'rtl';
+    
+    const copyButton = document.createElement('button');
+    copyButton.className = 'copy-button';
+    copyButton.innerHTML = '<span class="icon">📋</span> نسخ';
+    copyButton.title = 'نسخ النص';
+    
+    copyButton.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(content);
+            copyButton.classList.add('copied');
+            copyButton.innerHTML = '<span class="icon">✓</span> تم النسخ';
+            
+            setTimeout(() => {
+                copyButton.classList.remove('copied');
+                copyButton.innerHTML = '<span class="icon">📋</span> نسخ';
+            }, 2000);
+        } catch (err) {
+            console.error('فشل نسخ النص:', err);
+        }
+    });
+
+    messageContainer.appendChild(messageDiv);
+    messageContainer.appendChild(copyButton);
+    chatMessages.appendChild(messageContainer);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     // Save message to current chat
@@ -52,8 +100,8 @@ function addMessage(content, isUser = false) {
                 // Update chat title with first user message
                 chat.title = content.substring(0, 30);
             }
-            saveChats();
-            renderChatList();
+            debouncedSaveChats();
+            debouncedRenderChatList();
         }
     }
 }
@@ -162,50 +210,49 @@ async function sendToAI(message) {
     }
 }
 
-// Handle sending messages
+// تحسين أداء معالجة الرسائل
+let messageQueue = [];
+let isProcessing = false;
+
 async function handleSend() {
     const message = userInput.value.trim();
-    if (!message && !uploadedFile) return;
+    if ((!message && !uploadedFile) || isProcessing) return;
 
     try {
-        // Show loading state
+        isProcessing = true;
         sendBtn.disabled = true;
-        sendBtn.textContent = 'جاري المعالجة...';
+        sendBtn.classList.add('processing');
+        sendBtn.textContent = 'جاري المعالجة';
 
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'loading-indicator';
+        loadingIndicator.textContent = 'جاري التفكير';
+        chatMessages.appendChild(loadingIndicator);
+
+        userInput.value = '';
+        
         let fullMessage = message;
-
-        // If there's a file uploaded, analyze it first
         if (uploadedFile) {
             const fileAnalysis = await analyzeFile(uploadedFile);
             fullMessage = fileAnalysis;
-            
-            // Add user message to chat
             addMessage(`تحليل الملف: ${uploadedFile.name}`, true);
+            uploadedFile = null;
+            filePreview.innerHTML = '';
         } else {
-            // Add user message to chat
             addMessage(message, true);
         }
 
-        // Clear input
-        userInput.value = '';
-
-        // Process message
         const aiResponse = await sendToAI(fullMessage);
-        
-        // Clear file preview and uploaded file after getting response
-        if (uploadedFile) {
-            uploadedFile = null;
-            filePreview.innerHTML = '';
-        }
-        
-        // Add AI response
+        loadingIndicator.remove();
         addMessage(aiResponse);
+
     } catch (error) {
         console.error('Error in handleSend:', error);
         addMessage("عذراً، حدث خطأ في معالجة الطلب. يرجى المحاولة مرة أخرى.", false);
     } finally {
-        // Reset button state
+        isProcessing = false;
         sendBtn.disabled = false;
+        sendBtn.classList.remove('processing');
         sendBtn.textContent = 'إرسال';
     }
 }
@@ -252,6 +299,26 @@ const chatList = document.getElementById('chatList');
 let chats = JSON.parse(localStorage.getItem('chats') || '[]');
 let currentChatId = null;
 
+// تحسين أداء الذاكرة من خلال تحديد حد أقصى للرسائل المحفوظة
+const MAX_MESSAGES_PER_CHAT = 50;
+const MAX_CHATS = 20;
+
+function saveChats() {
+    // حذف الدردشات القديمة إذا تجاوز العدد الحد الأقصى
+    if (chats.length > MAX_CHATS) {
+        chats = chats.slice(0, MAX_CHATS);
+    }
+    
+    // تقليص عدد الرسائل في كل دردشة
+    chats.forEach(chat => {
+        if (chat.messages.length > MAX_MESSAGES_PER_CHAT) {
+            chat.messages = chat.messages.slice(-MAX_MESSAGES_PER_CHAT);
+        }
+    });
+    
+    localStorage.setItem('chats', JSON.stringify(chats));
+}
+
 function createNewChat() {
     const chatId = Date.now().toString();
     const newChat = {
@@ -267,33 +334,67 @@ function createNewChat() {
     return chatId;
 }
 
-function saveChats() {
-    localStorage.setItem('chats', JSON.stringify(chats));
-}
-
 function renderChatList() {
     chatList.innerHTML = '';
     chats.forEach(chat => {
         const chatElement = document.createElement('div');
         chatElement.className = `chat-item ${chat.id === currentChatId ? 'active' : ''}`;
-        chatElement.innerHTML = `
+        
+        const chatContent = document.createElement('div');
+        chatContent.className = 'chat-content';
+        chatContent.innerHTML = `
             <div class="chat-title">${chat.title}</div>
             <div class="chat-preview">${chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].content.substring(0, 30) + '...' : 'دردشة جديدة'}</div>
         `;
-        chatElement.onclick = () => loadChat(chat.id);
+        chatContent.onclick = () => loadChat(chat.id);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-chat-btn';
+        deleteBtn.innerHTML = '🗑️';
+        deleteBtn.title = 'حذف الدردشة';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm('هل أنت متأكد من حذف هذه الدردشة؟')) {
+                deleteChat(chat.id);
+            }
+        };
+        
+        chatElement.appendChild(chatContent);
+        chatElement.appendChild(deleteBtn);
         chatList.appendChild(chatElement);
     });
 }
 
+function deleteChat(chatId) {
+    chats = chats.filter(chat => chat.id !== chatId);
+    saveChats();
+    
+    if (chatId === currentChatId) {
+        if (chats.length > 0) {
+            loadChat(chats[0].id);
+        } else {
+            createNewChat();
+        }
+    } else {
+        renderChatList();
+    }
+}
+
+// تحسين أداء تحميل الدردشة
 function loadChat(chatId) {
+    if (currentChatId === chatId) return;
+    
     currentChatId = chatId;
     const chat = chats.find(c => c.id === chatId);
+    
     if (chat) {
-        chatMessages.innerHTML = '';
-        chat.messages.forEach(msg => {
-            addMessage(msg.content, msg.isUser);
+        requestAnimationFrame(() => {
+            chatMessages.innerHTML = '';
+            chat.messages.forEach(msg => {
+                addMessage(msg.content, msg.isUser);
+            });
+            renderChatList();
         });
-        renderChatList();
     }
 }
 
@@ -302,7 +403,7 @@ const menuBtn = document.createElement('button');
 menuBtn.className = 'menu-btn';
 menuBtn.innerHTML = '☰';
 menuBtn.onclick = toggleSidebar;
-document.querySelector('.header-controls').prepend(menuBtn);
+document.querySelector('.header-controls').appendChild(menuBtn); // تغيير من prepend إلى appendChild
 
 // Create overlay element
 const overlay = document.createElement('div');
@@ -344,3 +445,51 @@ if (chats.length === 0) {
     currentChatId = chats[0].id;
     loadChat(currentChatId);
 }
+
+// إضافة التخزين المؤقت للصور
+const imageCache = new Map();
+
+function loadAndCacheImage(src) {
+    if (imageCache.has(src)) {
+        return imageCache.get(src);
+    }
+
+    const promise = new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            imageCache.set(src, img);
+            resolve(img);
+        };
+        img.onerror = reject;
+        img.src = src;
+    });
+
+    imageCache.set(src, promise);
+    return promise;
+}
+
+// تحسين أداء قائمة الدردشات
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+const debouncedRenderChatList = debounce(renderChatList, 100);
+const debouncedSaveChats = debounce(saveChats, 300);
+
+// تحسين معالجة التمرير
+chatMessages.addEventListener('scroll', debounce(() => {
+    // تحسين أداء التمرير
+}, 50));
+
+// تنظيف الذاكرة المؤقتة عند الخروج
+window.addEventListener('beforeunload', () => {
+    imageCache.clear();
+});
