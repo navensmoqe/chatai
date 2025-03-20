@@ -45,6 +45,8 @@ body {
     padding: 1rem;
     color: var(--text-color);
     transition: background-color 0.3s ease;
+    text-align: right;
+    line-height: 1.8;
 }
 
 .app-container {
@@ -95,6 +97,9 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .chat-item:hover {
@@ -128,7 +133,7 @@ body {
 
 .chat-container {
     width: 100%;
-    max-width: 800px;
+    max-width: 1200px; /* تغيير من 800px إلى 1200px */
     height: 90vh;
     background: var(--chat-bg);
     border-radius: var(--border-radius);
@@ -152,6 +157,7 @@ body {
 
 .header-controls {
     position: absolute;
+    right: auto;
     left: 1rem;
     display: flex;
     gap: 1rem;
@@ -204,38 +210,82 @@ body {
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem; /* زيادة المسافة بين الرسائل */
     scroll-behavior: smooth;
 }
 
-.message {
-    padding: 0.8rem 1.2rem;
-    border-radius: 1rem;
-    max-width: 80%;
-    word-wrap: break-word;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    letter-spacing: 0.2px;
-    animation: fadeIn 0.3s ease-in;
+.message-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    margin: 0.5rem 0;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+.user-message-container {
+    align-self: flex-end;
+    width: 100%;
+}
+
+.ai-message-container {
+    align-self: flex-start;
+    width: 100%;
+}
+
+.message {
+    padding: 0.8rem 1rem;
+    max-width: 100%;
+    word-wrap: break-word;
+    font-size: 1rem;
+    line-height: 1.8;
+    direction: rtl;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    white-space: pre-wrap;
+}
+
+.message:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .user-message {
-    background: var(--primary-color);
+    background: linear-gradient(135deg, #2962ff, #1565C0);
     color: white;
-    margin-left: auto;
-    border-bottom-right-radius: 0.4rem;
+    border-radius: 15px 15px 2px 15px;
+    margin-left: 1rem;
+    align-self: flex-start;
 }
 
 .ai-message {
     background: var(--message-bg);
     color: var(--text-color);
-    margin-right: auto;
-    border-bottom-left-radius: 0.4rem;
+    border-radius: 15px 15px 15px 2px;
+    margin-right: 1rem;
+    align-self: flex-end;
+}
+
+/* إضافة تأثير الفقاعة */
+.message::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+}
+
+.user-message::before {
+    right: -6px;
+    border-radius: 0 0 0 12px;
+    background: linear-gradient(135deg, var(--primary-color), #1a73e8);
+}
+
+.ai-message::before {
+    left: -6px;
+    border-radius: 0 0 12px 0;
+    background: var(--message-bg);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-top: 0;
+    border-right: 0;
 }
 
 .chat-input-container {
@@ -243,6 +293,7 @@ body {
     background: var(--chat-bg);
     border-top: 1px solid rgba(128, 128, 128, 0.2);
     display: flex;
+    flex-direction: row-reverse;
     gap: 0.8rem;
     align-items: center;
 }
@@ -279,6 +330,8 @@ body {
     transition: border-color 0.2s ease;
     background: var(--chat-bg);
     color: var(--text-color);
+    text-align: right;
+    direction: rtl;
 }
 
 #userInput:focus {
@@ -388,22 +441,57 @@ body {
     z-index: 999;
 }
 
+.highlighted-text {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: inherit;
+    display: block;
+    margin: 0.5em 0;
+    padding: 0.2em 0;
+    line-height: 1.6;
+    border-right: 3px solid var(--primary-color);
+    padding-right: 0.8em;
+    background: rgba(41, 98, 255, 0.05);
+}
+
 @media (max-width: 768px) {
     body {
         padding: 0.5rem;
     }
 
     .chat-container {
-        height: 95vh;
+        width: 100%;
+        max-width: none;
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    .message-container {
+        max-width: 90%;
+        margin: 0.3rem 0;
     }
 
     .message {
         max-width: 85%;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        line-height: 1.7;
+        padding: 1rem 1.3rem;
+    }
+
+    .chat-messages {
+        gap: 1.2rem;
+        padding: 1.2rem;
+    }
+
+    .chat-header {
+        justify-content: flex-end; /* تغيير من flex-start إلى flex-end */
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
 
     .chat-header h1 {
         font-size: 1.2rem;
+        margin-left: auto; /* تغيير من margin-right إلى margin-left */
     }
 
     #userInput {
@@ -416,12 +504,28 @@ body {
 
     .header-controls {
         gap: 0.8rem;
+        right: auto;
+        left: 0.5rem;
+    }
+
+    .control-item {
+        padding: 0;
+        background: none;
+        min-width: auto;
+    }
+    
+    .header-controls button {
+        padding: 0.5rem;
+    }
+    
+    .header-controls .icon {
+        font-size: 1.2rem;
     }
     
     .control-label {
-        font-size: 0.65rem;
+        font-size: 0.75rem;
     }
-    
+
     .disclaimer {
         font-size: 0.75rem;
         padding: 0.6rem;
@@ -453,9 +557,209 @@ body {
 
     .menu-btn {
         display: block;
+        font-size: 1.5rem;
+        padding: 0.5rem;
     }
 
     .sidebar-overlay.show {
         display: block;
     }
+
+    .copy-button {
+        opacity: 0.5; /* جعل الزر أكثر وضوحاً على الهواتف */
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+    }
+
+    .user-message {
+        margin-left: 0.5rem;
+        border-radius: 12px 12px 2px 12px;
+    }
+
+    .ai-message {
+        margin-right: 0.5rem;
+        border-radius: 12px 12px 12px 2px;
+    }
+
+    .user-message-container {
+        align-self: flex-end;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .ai-message-container {
+        align-self: flex-start;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .user-message {
+        margin-right: 0.5rem;
+        margin-left: auto;
+        border-radius: 12px 12px 2px 12px;
+    }
+
+    .ai-message {
+        margin-left: 0.5rem;
+        margin-right: auto;
+        border-radius: 12px 12px 12px 2px;
+    }
+
+    .user-message-container {
+        max-width: 85%;
+    }
+
+    .ai-message-container {
+        max-width: 85%;
+    }
+
+    .chat-messages {
+        padding: 1rem 0.8rem;
+    }
+
+    .copy-button {
+        margin-top: 0.2rem;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* تحسين حركة ظهور الرسائل */
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px) scale(0.98);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* تأثيرات التحميل */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.95); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60% { content: '...'; }
+    80%, 100% { content: ''; }
+}
+
+.processing {
+    position: relative;
+    animation: pulse 1.5s infinite ease-in-out;
+    background: #666 !important;
+    cursor: not-allowed;
+}
+
+.processing::after {
+    content: '';
+    display: inline-block;
+    width: 1em;
+    animation: dots 1.5s steps(1) infinite;
+}
+
+/* تحسين مظهر زر الإرسال أثناء المعالجة */
+#sendBtn.processing {
+    background-image: none;
+    opacity: 0.8;
+    transform: none !همportant;
+}
+
+/* إضافة مؤشر التحميل في منطقة الرسائل */
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    margin: 0.5rem;
+    border-radius: 1rem;
+    background: var(--message-bg);
+    color: var(--text-color);
+    opacity: 0.8;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.loading-indicator::after {
+    content: '';
+    display: inline-block;
+    width: 1em;
+    animation: dots 1.5s steps(1) infinite;
+}
+
+.copy-button {
+    align-self: flex-start;
+    position: relative;
+    margin-top: 0.3rem;
+    margin-right: auto;
+    background: var(--message-bg);
+    border: none;
+    color: var(--text-color);
+    opacity: 0;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.message-container:hover .copy-button {
+    opacity: 0.7;
+}
+
+.copy-button:hover {
+    opacity: 1 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.copy-button.copied {
+    opacity: 1;
+    background: var(--primary-color);
+    color: white;
+}
+
+.copy-button .icon {
+    font-size: 1rem;
+}
+
+/* إزالة البورد رايت من النص المميز في رسائل المستخدم */
+.user-message .highlighted-text {
+    border-right: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    padding: 0.3em 0.5em;
+    margin: 0.3em 0;
+}
+
+.delete-chat-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 0.3rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    margin-right: 0.5rem;
+}
+
+.delete-chat-btn:hover {
+    opacity: 1;
+    color: #ff4444;
+    transform: scale(1.1);
+}
+
+.chat-content {
+    flex: 1;
+    min-width: 0;
 }
